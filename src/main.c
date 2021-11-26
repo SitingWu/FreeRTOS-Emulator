@@ -214,33 +214,55 @@ void xGetButtonInput(void)
         xSemaphoreGive(buttons.lock);
     }
 }
-
+//Display
 void vDrawCaveBoundingBox(void)
 {   checkDraw(tumDrawCircle(   85,
 
-250,
-RADIOS,
+                                250,
+                                RADIOS,
                               TUMBlue),
-              __FUNCTION__);
+                 __FUNCTION__);
 
-    checkDraw(tumDrawFilledBox(CAVE_X+20, CAVE_Y+75,  CAVE_SIZE_X/2, CAVE_SIZE_X/2,
+    checkDraw(tumDrawFilledBox(CAVE_X+250,
+                             CAVE_Y+75,  
+                            CAVE_SIZE_X/2, 
+                            CAVE_SIZE_X/2,
                                Aqua),
                __FUNCTION__);
 
 
 
 
-	
+	//display triangle
 	 coord_t arr[3] = { 
-				{450, 200},
-                                {400, 300},
-                               {500, 300}};
+			            	{300, 200},
+                                {350, 300},
+                               {250, 300}};
         coord_t*ptr= arr;
 
-         
+        checkDraw(tumDrawTriangle(ptr,
+				                    Red),
+		            __FUNCTION__);
+     
+        //Text
+         char*str1="Left";
+       char*str2="Right";
 	checkDraw(tumDrawTriangle(ptr,
 				Red),
 		__FUNCTION__); 
+        //Text on left seit
+        checkDraw(tumDrawText 	( 	 	str1,
+		                    85,
+		                    500,
+		                    Black),
+                    __FUNCTION__ 	);
+        //Text on right seit
+           checkDraw(tumDrawText 	( 	str2,
+		                    500,
+		                    500,
+		                    Black),
+                    __FUNCTION__ 	);         
+
 }
 
 void vDrawCave(unsigned char ball_color_inverted)
@@ -264,79 +286,84 @@ void vDrawCave(unsigned char ball_color_inverted)
 
 void vDrawHelpText(void)
 {
-    static char str[100] = { 0 };
+    static char str1[100] = { 0 };
+    static char str2[100] = { 0 };
     static int text_width;
     ssize_t prev_font_size = tumFontGetCurFontSize();
 
     tumFontSetSize((ssize_t)30);
 
-    sprintf(str, "[Q]uit, [C]hange State");
+    sprintf(str1, "Right");
+    sprintf(str2, "Left");
 
-    if (!tumGetTextSize((char *)str, &text_width, NULL))
-        checkDraw(tumDrawText(str, SCREEN_WIDTH - text_width - 10,
+    if (!tumGetTextSize((char *)str1, &text_width, NULL))
+        checkDraw(tumDrawText((char* )str1, SCREEN_WIDTH - text_width-20,
                               DEFAULT_FONT_SIZE * 0.5, Black),
                   __FUNCTION__);
 
+    checkDraw(tumDrawText((char *)str2, 60,
+                              DEFAULT_FONT_SIZE * 0.5, Black),
+                  __FUNCTION__);
     tumFontSetSize(prev_font_size);
 }
 
 #define FPS_AVERAGE_COUNT 50
 #define FPS_FONT "IBMPlexSans-Bold.ttf"
 
-void vDrawFPS(void)
-{
-    static unsigned int periods[FPS_AVERAGE_COUNT] = { 0 };
-    static unsigned int periods_total = 0;
-    static unsigned int index = 0;
-    static unsigned int average_count = 0;
-    static TickType_t xLastWakeTime = 0, prevWakeTime = 0;
-    static char str[10] = { 0 };
-    static int text_width;
-    int fps = 0;
-    font_handle_t cur_font = tumFontGetCurFontHandle();
+//void vDrawFPS(void)
+//{
+//    static unsigned int periods[FPS_AVERAGE_COUNT] = { 0 };
+//  static unsigned int periods_total = 0;
+//   static unsigned int index = 0;
+//    static unsigned int average_count = 0;
+//    static TickType_t xLastWakeTime = 0, prevWakeTime = 0;
+//    static char str[10] = { 0 };
+//    static int text_width;
+//   int fps = 0;
+//    font_handle_t cur_font = tumFontGetCurFontHandle();
 
-    if (average_count < FPS_AVERAGE_COUNT) {
-        average_count++;
-    }
-    else {
-        periods_total -= periods[index];
-    }
+ //   if (average_count < FPS_AVERAGE_COUNT) {
+ //       average_count++;
+//    }
+//    else {
+ //       periods_total -= periods[index];
+//    }
 
-    xLastWakeTime = xTaskGetTickCount();
+ //   xLastWakeTime = xTaskGetTickCount();
 
-    if (prevWakeTime != xLastWakeTime) {
-        periods[index] =
-            configTICK_RATE_HZ / (xLastWakeTime - prevWakeTime);
-        prevWakeTime = xLastWakeTime;
-    }
-    else {
-        periods[index] = 0;
-    }
+ //   if (prevWakeTime != xLastWakeTime) {
+  //      periods[index] =
+  //          configTICK_RATE_HZ / (xLastWakeTime - prevWakeTime);
+   //     prevWakeTime = xLastWakeTime;
+   // }
+  //  else {
+  //      periods[index] = 0;
+   // }
 
-    periods_total += periods[index];
+  //  periods_total += periods[index];
 
-    if (index == (FPS_AVERAGE_COUNT - 1)) {
-        index = 0;
-    }
-    else {
-        index++;
-    }
+   // if (index == (FPS_AVERAGE_COUNT - 1)) {
+   //     index = 0;
+  //  }
+   // else {
+   //     index++;
+    //}
 
-    fps = periods_total / average_count;
+ //   fps = periods_total / average_count;
 
-    tumFontSelectFontFromName(FPS_FONT);
+  //  tumFontSelectFontFromName(FPS_FONT);
 
-    sprintf(str, "FPS: %2d", fps);
+ //   sprintf(str, "FPS: %2d", fps);
 
-    if (!tumGetTextSize((char *)str, &text_width, NULL))
-        checkDraw(tumDrawText(str, SCREEN_WIDTH - text_width - 10,
-                              SCREEN_HEIGHT - DEFAULT_FONT_SIZE * 1.5,
-                              Skyblue),
-                  __FUNCTION__);
+ //   if (!tumGetTextSize((char *)str, &text_width, NULL))
+  //      checkDraw(tumDrawText(str, SCREEN_WIDTH - text_width - 10,
+ //                             SCREEN_HEIGHT - DEFAULT_FONT_SIZE * 1.5,
+ //                             Skyblue),
+  //                __FUNCTION__);
 
-    tumFontSelectFontFromHandle(cur_font);
-    tumFontPutFontHandle(cur_font);
-}
+ //   tumFontSelectFontFromHandle(cur_font);
+ //   tumFontPutFontHandle(cur_font);
+//}
 
 void vDrawLogo(void)
 {
@@ -356,7 +383,8 @@ void vDrawLogo(void)
 void vDrawStaticItems(void)
 {
     vDrawHelpText();
-    vDrawLogo();
+    
+     // vDrawLogo();
 }
 
 void vDrawButtonText(void)
@@ -523,21 +551,21 @@ void vTCPDemoTask(void *pvParameters)
 
 void vDemoTask1(void *pvParameters)
 {
-    image_handle_t ball_spritesheet =
-        tumDrawLoadImage("../resources/images/ball_spritesheet.png");
-    animation_handle_t ball_animation =
-        tumDrawAnimationCreate(ball_spritesheet, 25, 1);
-    tumDrawAnimationAddSequence(ball_animation, "FORWARDS", 0, 0,
-                                SPRITE_SEQUENCE_HORIZONTAL_POS, 24);
-    tumDrawAnimationAddSequence(ball_animation, "REVERSE", 0, 23,
-                                SPRITE_SEQUENCE_HORIZONTAL_NEG, 24);
-    sequence_handle_t forward_sequence =
-        tumDrawAnimationSequenceInstantiate(ball_animation, "FORWARDS",
-                                            40);
-    sequence_handle_t reverse_sequence =
-        tumDrawAnimationSequenceInstantiate(ball_animation, "REVERSE",
-                                            40);
-    TickType_t xLastFrameTime = xTaskGetTickCount();
+  //  image_handle_t ball_spritesheet =
+  //      tumDrawLoadImage("../resources/images/ball_spritesheet.png");
+  //  animation_handle_t ball_animation =
+  //      tumDrawAnimationCreate(ball_spritesheet, 25, 1);
+  //  tumDrawAnimationAddSequence(ball_animation, "FORWARDS", 0, 0,
+  //                              SPRITE_SEQUENCE_HORIZONTAL_POS, 24);
+  //  tumDrawAnimationAddSequence(ball_animation, "REVERSE", 0, 23,
+  //                              SPRITE_SEQUENCE_HORIZONTAL_NEG, 24);
+  //  sequence_handle_t forward_sequence =
+  //      tumDrawAnimationSequenceInstantiate(ball_animation, "FORWARDS",
+  //                                          40);
+  //  sequence_handle_t reverse_sequence =
+  //      tumDrawAnimationSequenceInstantiate(ball_animation, "REVERSE",
+  //                                          40);
+  //  TickType_t xLastFrameTime = xTaskGetTickCount();
 
     while (1) {
         if (DrawSignal)
@@ -551,21 +579,21 @@ void vDemoTask1(void *pvParameters)
 
                 // Clear screen
                 checkDraw(tumDrawClear(White), __FUNCTION__);
-                vDrawStaticItems();
-                vDrawCave(tumEventGetMouseLeft());
-                vDrawButtonText();
-                tumDrawAnimationDrawFrame(forward_sequence,
-                                          xTaskGetTickCount() -
-                                          xLastFrameTime,
-                                          SCREEN_WIDTH - 50, SCREEN_HEIGHT - 60);
-                tumDrawAnimationDrawFrame(reverse_sequence,
-                                          xTaskGetTickCount() -
-                                          xLastFrameTime,
-                                          SCREEN_WIDTH - 50 - 40, SCREEN_HEIGHT - 60);
-                xLastFrameTime = xTaskGetTickCount();
+                 vDrawStaticItems();
+                 vDrawCave(tumEventGetMouseLeft());
+             // vDrawButtonText();
+              //  tumDrawAnimationDrawFrame(forward_sequence,
+              //                            xTaskGetTickCount() -
+              //                            xLastFrameTime,
+              //                            SCREEN_WIDTH - 50, SCREEN_HEIGHT - 60);
+              //  tumDrawAnimationDrawFrame(reverse_sequence,
+              //                            xTaskGetTickCount() -
+               //                           xLastFrameTime,
+              //                            SCREEN_WIDTH - 50 - 40, SCREEN_HEIGHT - 60);
+              //  xLastFrameTime = xTaskGetTickCount();
 
                 // Draw FPS in lower right corner
-                vDrawFPS();
+               // vDrawFPS();
 
                 xSemaphoreGive(ScreenLock);
 
@@ -669,7 +697,7 @@ void vDemoTask2(void *pvParameters)
                           __FUNCTION__);
 
                 // Draw FPS in lower right corner
-                vDrawFPS();
+ //                vDrawFPS();
 
                 xSemaphoreGive(ScreenLock);
 
