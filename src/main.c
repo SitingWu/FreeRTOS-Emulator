@@ -40,6 +40,7 @@
 #define KEYCODE(CHAR) SDL_SCANCODE_##CHAR
 #define CAVE_SIZE_X SCREEN_WIDTH / 2
 #define CAVE_SIZE_Y SCREEN_HEIGHT / 2
+#define RADIOS 70
 #define CAVE_X CAVE_SIZE_X / 2
 #define CAVE_Y CAVE_SIZE_Y / 2
 #define CAVE_THICKNESS 25
@@ -208,23 +209,38 @@ void vSwapBuffers(void *pvParameters)
 
 void xGetButtonInput(void)
 {
-    if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
+   if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
         xQueueReceive(buttonInputQueue, &buttons.buttons, 0);
         xSemaphoreGive(buttons.lock);
     }
 }
 
 void vDrawCaveBoundingBox(void)
-{
-    checkDraw(tumDrawFilledBox(CAVE_X - CAVE_THICKNESS,
-                               CAVE_Y - CAVE_THICKNESS,
-                               CAVE_SIZE_X + CAVE_THICKNESS * 2,
-                               CAVE_SIZE_Y + CAVE_THICKNESS * 2, TUMBlue),
+{   checkDraw(tumDrawCircle(   85,
+
+250,
+RADIOS,
+                              TUMBlue),
               __FUNCTION__);
 
-    checkDraw(tumDrawFilledBox(CAVE_X, CAVE_Y, CAVE_SIZE_X, CAVE_SIZE_Y,
+    checkDraw(tumDrawFilledBox(CAVE_X+20, CAVE_Y+75,  CAVE_SIZE_X/2, CAVE_SIZE_X/2,
                                Aqua),
-              __FUNCTION__);
+               __FUNCTION__);
+
+
+
+
+	
+	 coord_t arr[3] = { 
+				{450, 200},
+                                {400, 300},
+                               {500, 300}};
+        coord_t*ptr= arr;
+
+         
+	checkDraw(tumDrawTriangle(ptr,
+				Red),
+		__FUNCTION__); 
 }
 
 void vDrawCave(unsigned char ball_color_inverted)
@@ -233,7 +249,7 @@ void vDrawCave(unsigned char ball_color_inverted)
 
     vDrawCaveBoundingBox();
 
-    circlePositionX = CAVE_X + tumEventGetMouseX() / 2;
+    circlePositionX = CAVE_X +tumEventGetMouseX() / 2;
     circlePositionY = CAVE_Y + tumEventGetMouseY() / 2;
 
     if (ball_color_inverted)
