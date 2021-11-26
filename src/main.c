@@ -297,8 +297,9 @@ void vDrawHelpText(void)
     sprintf(str2, "Left");
 
     if (!tumGetTextSize((char *)str1, &text_width, NULL))
-        checkDraw(tumDrawText((char* )str1, SCREEN_WIDTH - text_width-20,
-                              DEFAULT_FONT_SIZE * 0.5, Black),
+        checkDraw(tumDrawText((char* )str1, (620-text_width),
+                                400,
+                             Black),
                   __FUNCTION__);
 
     checkDraw(tumDrawText((char *)str2, 60,
