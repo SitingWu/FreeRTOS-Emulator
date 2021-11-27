@@ -452,23 +452,23 @@ checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 7, Black),
 }
 
 
-static int vCheckStateInput(void)
-{
-    if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
-        if (buttons.buttons[KEYCODE(E)]) {
-            buttons.buttons[KEYCODE(E)] = 0;
-            if (StateQueue) {
-                xSemaphoreGive(buttons.lock);
-                xQueueSend(StateQueue, &next_state_signal, 0);
-                return 0;
-            }
-            return -1;
-        }
-        xSemaphoreGive(buttons.lock);
-    }
-
-    return 0;
-}
+//static int vCheckStateInput(void)
+//{
+//    if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
+//        if (buttons.buttons[KEYCODE(E)]) {
+//           buttons.buttons[KEYCODE(E)] = 0;
+//            if (StateQueue) {
+//                xSemaphoreGive(buttons.lock);
+//                xQueueSend(StateQueue, &next_state_signal, 0);
+//                return 0;
+//            }
+//            return -1;
+//        }
+//        xSemaphoreGive(buttons.lock);
+//    }
+//
+//    return 0;
+//}
 
 void UDPHandlerOne(size_t read_size, char *buffer, void *args)
 {
@@ -660,7 +660,7 @@ void vDemoTask1(void *pvParameters)
                 xSemaphoreGive(ScreenLock);
 
                 // Get input and check for state change
-                vCheckStateInput();
+                //vCheckStateInput();
             }
     }
 }
@@ -764,7 +764,7 @@ void vDemoTask2(void *pvParameters)
                 xSemaphoreGive(ScreenLock);
 
                 // Check for state change
-                vCheckStateInput();
+                //vCheckStateInput();
 
                 // Keep track of when task last ran so that you know how many ticks
                 //(in our case miliseconds) have passed so that the balls position
@@ -860,16 +860,15 @@ int main(int argc, char *argv[])
         PRINT_TASK_ERROR("BufferSwapTask");
         goto err_bufferswap;
     }
-
     /** Demo Tasks */
     if (xTaskCreate(vDemoTask1, "DemoTask1", mainGENERIC_STACK_SIZE * 2,
                     NULL, mainGENERIC_PRIORITY, &DemoTask1) != pdPASS) {
         PRINT_TASK_ERROR("DemoTask1");
         goto err_demotask1;
-    }
+         }
     if (xTaskCreate(vDemoTask2, "DemoTask2", mainGENERIC_STACK_SIZE * 2,
                     NULL, mainGENERIC_PRIORITY, &DemoTask2) != pdPASS) {
-        PRINT_TASK_ERROR("DemoTask2");
+       PRINT_TASK_ERROR("DemoTask2");
         goto err_demotask2;
     }
 
