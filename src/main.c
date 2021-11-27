@@ -416,15 +416,15 @@ void vDrawButtonText(void)
 {
     static char str[100] = { 0 };
    
-    
+      tumFontSetSize((ssize_t)18);
 
-   // sprintf(str, "Axis 1: %5d | Axis 2: %5d", tumEventGetMouseX(),
-  //          tumEventGetMouseY());
+    sprintf(str, "Axis 1: %5d | Axis 2: %5d", tumEventGetMouseX(),
+           tumEventGetMouseY());
 
-//    checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 0.5, Black),
- //             __FUNCTION__);
+checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 7, Black),
+              __FUNCTION__);
 
-    tumFontSetSize((ssize_t)18);
+  
     if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
         if (buttons.buttons[KEYCODE(A)]) {
             buttons.buttons[KEYCODE(A)] = 0;
