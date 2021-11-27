@@ -289,27 +289,42 @@ void vDrawCave(unsigned char Reset)
 void vDrawHelpText(void)
 {
     static char str1[100] = { 0 };
-    static char str2[100] = { 0 };
+  
     static int text_width;
     ssize_t prev_font_size = tumFontGetCurFontSize();
 
     tumFontSetSize((ssize_t)30);
 
     sprintf(str1, "Right");
-    sprintf(str2, "Left");
+   
 
     if (!tumGetTextSize((char *)str1, &text_width, NULL))
         checkDraw(tumDrawText((char* )str1, (620-text_width),
                                 400,
                              Black),
                   __FUNCTION__);
+    
+      tumFontSetSize(prev_font_size);
+}
 
-    checkDraw(tumDrawText((char *)str2, 60,
+void vDrawHelpTextMove(int i)
+{
+    static char str1[100] = { 0 };
+    
+    static int text_width;
+    ssize_t prev_font_size = tumFontGetCurFontSize();
+
+    tumFontSetSize((ssize_t)30);
+
+    sprintf(str1, "Left");
+
+    if (!tumGetTextSize((char *)str1, &text_width, NULL))
+           
+    checkDraw(tumDrawText((char *)str1, 60+i,
                               DEFAULT_FONT_SIZE * 0.5, Black),
                   __FUNCTION__);
     tumFontSetSize(prev_font_size);
 }
-
 #define FPS_AVERAGE_COUNT 50
 #define FPS_FONT "IBMPlexSans-Bold.ttf"
 
@@ -395,6 +410,8 @@ void vDrawStaticItems(void)
 void vDrawButtonText(void)
 {
     static char str[100] = { 0 };
+   
+    
 
    // sprintf(str, "Axis 1: %5d | Axis 2: %5d", tumEventGetMouseX(),
   //          tumEventGetMouseY());
@@ -402,6 +419,7 @@ void vDrawButtonText(void)
 //    checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 0.5, Black),
  //             __FUNCTION__);
 
+    tumFontSetSize((ssize_t)18);
     if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
         if (buttons.buttons[KEYCODE(A)]) {
             buttons.buttons[KEYCODE(A)] = 0;
@@ -584,7 +602,7 @@ void vDemoTask1(void *pvParameters)
   //      tumDrawAnimationSequenceInstantiate(ball_animation, "REVERSE",
   //                                          40);
   //  TickType_t xLastFrameTime = xTaskGetTickCount();
-
+    int count=0;
     while (1) {
         if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
@@ -599,7 +617,9 @@ void vDemoTask1(void *pvParameters)
                 checkDraw(tumDrawClear(White), __FUNCTION__);
                  vDrawStaticItems();
                  vDrawCave(tumEventGetMouseLeft());
-
+                count+=10;
+                if (count>490) count=490;
+                vDrawHelpTextMove(count);
        
         
               vDrawButtonText();
