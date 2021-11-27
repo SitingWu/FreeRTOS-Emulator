@@ -40,7 +40,7 @@
 #define KEYCODE(CHAR) SDL_SCANCODE_##CHAR
 #define CAVE_SIZE_X SCREEN_WIDTH / 2
 #define CAVE_SIZE_Y SCREEN_HEIGHT / 2
-#define RADIOS 70
+#define RADIOS 50
 #define CAVE_X CAVE_SIZE_X / 2
 #define CAVE_Y CAVE_SIZE_Y / 2
 #define CAVE_THICKNESS 25
@@ -216,7 +216,7 @@ void xGetButtonInput(void)
 }
 //Display
 void vDrawCaveBoundingBox(void)
-{   checkDraw(tumDrawCircle(   85,
+{   checkDraw(tumDrawCircle(   125,
 
                                 250,
                                 RADIOS,
@@ -225,8 +225,8 @@ void vDrawCaveBoundingBox(void)
 
     checkDraw(tumDrawFilledBox(CAVE_X+250,
                              CAVE_Y+75,  
-                            CAVE_SIZE_X/2, 
-                            CAVE_SIZE_X/2,
+                            CAVE_SIZE_X/3, 
+                            CAVE_SIZE_X/3,
                                Aqua),
                __FUNCTION__);
 
@@ -265,23 +265,25 @@ void vDrawCaveBoundingBox(void)
 
 }
 
-void vDrawCave(unsigned char ball_color_inverted)
+char btnA = 0, btnB = 0, btnC = 0, btnD = 0;
+
+void vDrawCave(unsigned char Reset)
 {
     static unsigned short circlePositionX, circlePositionY;
-
+     static char str[100] = { 0 };
     vDrawCaveBoundingBox();
 
     circlePositionX = CAVE_X +tumEventGetMouseX() / 2;
     circlePositionY = CAVE_Y + tumEventGetMouseY() / 2;
 
-    if (ball_color_inverted)
-        checkDraw(tumDrawCircle(circlePositionX, circlePositionY, 20,
-                                Black),
+    if (Reset){
+     btnA = 0; btnB = 0; btnC = 0; btnD = 0;
+     sprintf(str, "A: %d | B: %d | C: %d | D: %d",
+                        btnA ,btnB,btnC,btnD);
+        
+        checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 5, Black),
                   __FUNCTION__);
-    else
-        checkDraw(tumDrawCircle(circlePositionX, circlePositionY, 20,
-                                Silver),
-                  __FUNCTION__);
+    }
 }
 
 void vDrawHelpText(void)
@@ -388,44 +390,50 @@ void vDrawStaticItems(void)
      // vDrawLogo();
 }
 
+
+
 void vDrawButtonText(void)
 {
     static char str[100] = { 0 };
 
-    sprintf(str, "Axis 1: %5d | Axis 2: %5d", tumEventGetMouseX(),
-            tumEventGetMouseY());
+   // sprintf(str, "Axis 1: %5d | Axis 2: %5d", tumEventGetMouseX(),
+  //          tumEventGetMouseY());
 
-    checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 0.5, Black),
-              __FUNCTION__);
+//    checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 0.5, Black),
+ //             __FUNCTION__);
 
     if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
-        sprintf(str, "W: %d | S: %d | A: %d | D: %d",
-                buttons.buttons[KEYCODE(W)],
-                buttons.buttons[KEYCODE(S)],
-                buttons.buttons[KEYCODE(A)],
-                buttons.buttons[KEYCODE(D)]);
+        if (buttons.buttons[KEYCODE(A)]) {
+            buttons.buttons[KEYCODE(A)] = 0;
+            btnA+=1;}
+        else if (buttons.buttons[KEYCODE(B)]) {
+            buttons.buttons[KEYCODE(B)] = 0;
+            btnB+=1;}
+
+        else if (buttons.buttons[KEYCODE(C)]) {
+            buttons.buttons[KEYCODE(C)] = 0;
+            btnC+=1;}
+
+        else if (buttons.buttons[KEYCODE(D)]) {
+            buttons.buttons[KEYCODE(D)] = 0;
+            btnD+=1;}
+    
+        sprintf(str, "A: %d | B: %d | C: %d | D: %d",
+                        btnA ,btnB,btnC,btnD);
         xSemaphoreGive(buttons.lock);
-        checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 2, Black),
+        checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 5, Black),
                   __FUNCTION__);
     }
 
-    if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
-        sprintf(str, "UP: %d | DOWN: %d | LEFT: %d | RIGHT: %d",
-                buttons.buttons[KEYCODE(UP)],
-                buttons.buttons[KEYCODE(DOWN)],
-                buttons.buttons[KEYCODE(LEFT)],
-                buttons.buttons[KEYCODE(RIGHT)]);
-        xSemaphoreGive(buttons.lock);
-        checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 3.5, Black),
-                  __FUNCTION__);
-    }
+    
 }
+
 
 static int vCheckStateInput(void)
 {
     if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
-        if (buttons.buttons[KEYCODE(C)]) {
-            buttons.buttons[KEYCODE(C)] = 0;
+        if (buttons.buttons[KEYCODE(E)]) {
+            buttons.buttons[KEYCODE(E)] = 0;
             if (StateQueue) {
                 xSemaphoreGive(buttons.lock);
                 xQueueSend(StateQueue, &next_state_signal, 0);
@@ -550,6 +558,15 @@ void vTCPDemoTask(void *pvParameters)
     }
 }
 
+int vButton(unsigned char Button_inverted)
+{
+      vDrawCaveBoundingBox();
+       if (Button_inverted)
+       return 1;
+       else 
+       return 0;
+}
+
 void vDemoTask1(void *pvParameters)
 {
   //  image_handle_t ball_spritesheet =
@@ -582,7 +599,10 @@ void vDemoTask1(void *pvParameters)
                 checkDraw(tumDrawClear(White), __FUNCTION__);
                  vDrawStaticItems();
                  vDrawCave(tumEventGetMouseLeft());
-             // vDrawButtonText();
+
+       
+        
+              vDrawButtonText();
               //  tumDrawAnimationDrawFrame(forward_sequence,
               //                            xTaskGetTickCount() -
               //                            xLastFrameTime,
