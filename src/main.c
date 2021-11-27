@@ -56,6 +56,12 @@
 #ifdef TRACE_FUNCTIONS
 #include "tracer.h"
 #endif
+//pointer of triagle
+static coord_t arr[3]={ 
+			            {300,200},
+                        {350,300},
+                        {250,300}
+                            };
 
 static char *mq_one_name = "FreeRTOS_MQ_one_1";
 static char *mq_two_name = "FreeRTOS_MQ_two_1";
@@ -215,71 +221,44 @@ void xGetButtonInput(void)
     }
 }
 //Display
-void vDrawCaveBoundingBox(void)
-{   
-
-
-
-
+void vDrawTriangle(void)
+{ 
 	//display triangle
-	 coord_t arr[3] = { 
-			            	{300, 200},
-                                {350, 300},
-                               {250, 300}};
+	 
         coord_t*ptr= arr;
 
         checkDraw(tumDrawTriangle(ptr,
-				                    Red),
-		            __FUNCTION__);
-     
-        //Text
-         char*str1="Left";
-       char*str2="Right";
-	checkDraw(tumDrawTriangle(ptr,
-				Red),
-		__FUNCTION__); 
-        //Text on left seit
-        checkDraw(tumDrawText 	( 	 	str1,
-		                    85,
-		                    500,
-		                    Black),
-                    __FUNCTION__ 	);
-        //Text on right seit
-           checkDraw(tumDrawText 	( 	str2,
-		                    500,
-		                    500,
-		                    Black),
-                    __FUNCTION__ 	);         
+				                Red),
+		            __FUNCTION__);       
+            
 
 }
 
 void vDrawMoveCirele(int x,int y)
-{   checkDraw(tumDrawCircle(   x,
-
-                                y,
-                                RADIOS,
+{   checkDraw(tumDrawCircle(  x,
+                              y,
+                              RADIOS,
                               TUMBlue),
-                 __FUNCTION__);}
+                 __FUNCTION__);
+}
 
 void vDrawMoveCirelSquare(int x,int y){
     checkDraw(tumDrawFilledBox(x,
-                             y,  
+                              y,  
                             CAVE_SIZE_X/4, 
                             CAVE_SIZE_X/4,
                                Aqua),
                __FUNCTION__);
 
 }
+
+//count store
 char btnA = 0, btnB = 0, btnC = 0, btnD = 0;
 
-void vDrawCave(unsigned char Reset)
+void ButtonCountRest(unsigned char Reset)
 {
-    static unsigned short circlePositionX, circlePositionY;
      static char str[100] = { 0 };
-    vDrawCaveBoundingBox();
-
-    circlePositionX = CAVE_X +tumEventGetMouseX() / 2;
-    circlePositionY = CAVE_Y + tumEventGetMouseY() / 2;
+    
 
     if (Reset){
      btnA = 0; btnB = 0; btnC = 0; btnD = 0;
@@ -325,8 +304,10 @@ void vDrawHelpTextMove(int i)
 
     if (!tumGetTextSize((char *)str1, &text_width, NULL))
            
-    checkDraw(tumDrawText((char *)str1, 60+i,
-                              DEFAULT_FONT_SIZE * 0.5, Black),
+    checkDraw(tumDrawText((char *)str1,
+                            60+i,
+                            DEFAULT_FONT_SIZE * 0.5, 
+                            Black),
                   __FUNCTION__);
     tumFontSetSize(prev_font_size);
 }
@@ -406,6 +387,7 @@ void vDrawLogo(void)
 void vDrawStaticItems(void)
 {
     vDrawHelpText();
+    vDrawTriangle();
     
      // vDrawLogo();
 }
@@ -417,14 +399,14 @@ void vDrawButtonText(void)
     static char str[100] = { 0 };
    
       tumFontSetSize((ssize_t)18);
-
+    //Mouse value
     sprintf(str, "Axis 1: %5d | Axis 2: %5d", tumEventGetMouseX(),
            tumEventGetMouseY());
 
 checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 7, Black),
               __FUNCTION__);
 
-  
+    //Button count
     if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
         if (buttons.buttons[KEYCODE(A)]) {
             buttons.buttons[KEYCODE(A)] = 0;
@@ -581,14 +563,7 @@ void vTCPDemoTask(void *pvParameters)
     }
 }
 
-int vButton(unsigned char Button_inverted)
-{
-      vDrawCaveBoundingBox();
-       if (Button_inverted)
-       return 1;
-       else 
-       return 0;
-}
+
 
 void vDemoTask1(void *pvParameters)
 {
@@ -626,24 +601,24 @@ void vDemoTask1(void *pvParameters)
 
                 // Clear screen
                 checkDraw(tumDrawClear(White), __FUNCTION__);
-                 vDrawStaticItems();
+                vDrawStaticItems();
+
                 vDrawMoveCirele(circleX,circleY);
                 vDrawMoveCirelSquare(squareX,squareY);
+                 //parameter für circle
                  phiCircle += 0.1;
-		circleX = 140 * cos(phiCircle) + 300;
-		circleY = 140 * sin(phiCircle) + 260;
-
-        phiSquare += 0.1;
-		    squareX = 140 * cos(phiSquare) +250;
-		    squareY = 140 * sin(phiSquare) +220;
-                 vDrawCave(tumEventGetMouseLeft());
+		        circleX = 140 * cos(phiCircle) + 300;
+		        circleY = 140 * sin(phiCircle) + 260;
+                //parameter für square
+                phiSquare += 0.1;
+		        squareX = 140 * cos(phiSquare) +250;
+		        squareY = 140 * sin(phiSquare) +220;
+                 
                 count+=10;
                 if (count>490) count=490;
                 vDrawHelpTextMove(count);
-
-       
-        
-              vDrawButtonText();
+                ButtonCountRest(tumEventGetMouseLeft());
+                vDrawButtonText();
               //  tumDrawAnimationDrawFrame(forward_sequence,
               //                            xTaskGetTickCount() -
               //                            xLastFrameTime,
