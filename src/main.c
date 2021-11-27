@@ -216,19 +216,7 @@ void xGetButtonInput(void)
 }
 //Display
 void vDrawCaveBoundingBox(void)
-{   checkDraw(tumDrawCircle(   125,
-
-                                250,
-                                RADIOS,
-                              TUMBlue),
-                 __FUNCTION__);
-
-    checkDraw(tumDrawFilledBox(CAVE_X+250,
-                             CAVE_Y+75,  
-                            CAVE_SIZE_X/3, 
-                            CAVE_SIZE_X/3,
-                               Aqua),
-               __FUNCTION__);
+{   
 
 
 
@@ -265,6 +253,23 @@ void vDrawCaveBoundingBox(void)
 
 }
 
+void vDrawMoveCirele(int x,int y)
+{   checkDraw(tumDrawCircle(   x,
+
+                                y,
+                                RADIOS,
+                              TUMBlue),
+                 __FUNCTION__);}
+
+void vDrawMoveCirelSquare(int x,int y){
+    checkDraw(tumDrawFilledBox(x,
+                             y,  
+                            CAVE_SIZE_X/4, 
+                            CAVE_SIZE_X/4,
+                               Aqua),
+               __FUNCTION__);
+
+}
 char btnA = 0, btnB = 0, btnC = 0, btnD = 0;
 
 void vDrawCave(unsigned char Reset)
@@ -603,6 +608,12 @@ void vDemoTask1(void *pvParameters)
   //                                          40);
   //  TickType_t xLastFrameTime = xTaskGetTickCount();
     int count=0;
+    float phiSquare = acos(-1.0);
+    float phiCircle = 0;
+    int circleX = 125;
+	int circleY = 250;
+    int squareX = CAVE_X+250;
+    int squareY = CAVE_Y+75;
     while (1) {
         if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
@@ -616,10 +627,20 @@ void vDemoTask1(void *pvParameters)
                 // Clear screen
                 checkDraw(tumDrawClear(White), __FUNCTION__);
                  vDrawStaticItems();
+                vDrawMoveCirele(circleX,circleY);
+                vDrawMoveCirelSquare(squareX,squareY);
+                 phiCircle += 0.1;
+		circleX = 140 * cos(phiCircle) + 300;
+		circleY = 140 * sin(phiCircle) + 260;
+
+        phiSquare += 0.1;
+		    squareX = 140 * cos(phiSquare) +250;
+		    squareY = 140 * sin(phiSquare) +220;
                  vDrawCave(tumEventGetMouseLeft());
                 count+=10;
                 if (count>490) count=490;
                 vDrawHelpTextMove(count);
+
        
         
               vDrawButtonText();
