@@ -290,6 +290,22 @@ void vDrawMoveCirelSquare(int x,int y){
 
 }
 
+void vDrawCireleBlink(int x,int y,int count)
+{  if(count%2!=0)
+     checkDraw(tumDrawCircle(  x,
+                              y,
+                              RADIOS/2,
+                              TUMBlue),
+                 __FUNCTION__);
+    else 
+    checkDraw(tumDrawCircle(  x,
+                              y,
+                              RADIOS/2,
+                              White),
+                 __FUNCTION__);
+   
+}
+
 //count store
 char btnA = 0, btnB = 0, btnC = 0, btnD = 0;
 
@@ -352,60 +368,59 @@ void vDrawHelpTextMove(int i)
 #define FPS_AVERAGE_COUNT 50
 #define FPS_FONT "IBMPlexSans-Bold.ttf"
 
-//void vDrawFPS(void)
-//{
-//    static unsigned int periods[FPS_AVERAGE_COUNT] = { 0 };
-//  static unsigned int periods_total = 0;
-//   static unsigned int index = 0;
-//    static unsigned int average_count = 0;
-//    static TickType_t xLastWakeTime = 0, prevWakeTime = 0;
-//    static char str[10] = { 0 };
-//    static int text_width;
-//   int fps = 0;
-//    font_handle_t cur_font = tumFontGetCurFontHandle();
+void vDrawFPS(void)
+{
+    static unsigned int periods[FPS_AVERAGE_COUNT] = { 0 };
+  static unsigned int periods_total = 0;
+   static unsigned int index = 0;
+    static unsigned int average_count = 0;
+    static TickType_t xLastWakeTime = 0, prevWakeTime = 0;
+    static char str[10] = { 0 };
+    static int text_width;
+   int fps = 0;
+    font_handle_t cur_font = tumFontGetCurFontHandle();
 
- //   if (average_count < FPS_AVERAGE_COUNT) {
- //       average_count++;
-//    }
-//    else {
- //       periods_total -= periods[index];
-//    }
+   if (average_count < FPS_AVERAGE_COUNT) {
+       average_count++;
+    }
+    else {
+       periods_total -= periods[index];
+    }
 
- //   xLastWakeTime = xTaskGetTickCount();
+   xLastWakeTime = xTaskGetTickCount();
 
- //   if (prevWakeTime != xLastWakeTime) {
-  //      periods[index] =
-  //          configTICK_RATE_HZ / (xLastWakeTime - prevWakeTime);
-   //     prevWakeTime = xLastWakeTime;
-   // }
-  //  else {
-  //      periods[index] = 0;
-   // }
+   if (prevWakeTime != xLastWakeTime) {
+      periods[index] =
+          configTICK_RATE_HZ / (xLastWakeTime - prevWakeTime);
+     prevWakeTime = xLastWakeTime;
+     }
+    else {
+       periods[index] = 0;
+     }
 
-  //  periods_total += periods[index];
+      periods_total += periods[index];
 
-   // if (index == (FPS_AVERAGE_COUNT - 1)) {
-   //     index = 0;
-  //  }
-   // else {
-   //     index++;
-    //}
+     if (index == (FPS_AVERAGE_COUNT - 1)) {
+       index = 0;
+          }
+     else {
+             index++;
+            }
 
- //   fps = periods_total / average_count;
+       fps = periods_total / average_count;
+      tumFontSelectFontFromName(FPS_FONT);
 
-  //  tumFontSelectFontFromName(FPS_FONT);
+       sprintf(str, "FPS: %2d", fps);
 
- //   sprintf(str, "FPS: %2d", fps);
+      if (!tumGetTextSize((char *)str, &text_width, NULL))
+         checkDraw(tumDrawText(str, SCREEN_WIDTH - text_width - 10,
+                                 SCREEN_HEIGHT - DEFAULT_FONT_SIZE * 1.5,
+                                 Skyblue),
+                    __FUNCTION__);
 
- //   if (!tumGetTextSize((char *)str, &text_width, NULL))
-  //      checkDraw(tumDrawText(str, SCREEN_WIDTH - text_width - 10,
- //                             SCREEN_HEIGHT - DEFAULT_FONT_SIZE * 1.5,
- //                             Skyblue),
-  //                __FUNCTION__);
-
- //   tumFontSelectFontFromHandle(cur_font);
- //   tumFontPutFontHandle(cur_font);
-//}
+      tumFontSelectFontFromHandle(cur_font);
+      tumFontPutFontHandle(cur_font);
+    }
 
 void vDrawLogo(void)
 {
@@ -709,13 +724,51 @@ void vDemoTask1(void *pvParameters)
             }
     }
 }
+void vDemoTask2(void *pvParameters)
+{   int count=1;
+    int input=1;
+    const TickType_t xFrequence=500;
+    TickType_t xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+   // Clear screen
+                checkDraw(tumDrawClear(White), __FUNCTION__);
+     while (1) {
+        if (DrawSignal)
+            if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
+                pdTRUE) {
+                   
+                    xGetButtonInput();
+                    xSemaphoreTake(ScreenLock, portMAX_DELAY);
+                vDrawCireleBlink(250,70,count);//2HZ
+                if (count%2!=0){
+                 vDrawCireleBlink(320,70,input);
+                 input++;
+                }     
+                  count++;
+                  xSemaphoreGive(ScreenLock);
+                
+               
+                             
+               // Check for state change
+                vCheckStateInput();
+                // Basic sleep of 500 milliseconds
+                
+                
+                vTaskDelay(xFrequence);
+               
+               
+               
+                }
+     }    
+
+}
 
 void playBallSound(void *args)
 {
     tumSoundPlaySample(a3);
 }
 
-void vDemoTask2(void *pvParameters)
+void vDemoTask3(void *pvParameters)
 {
     TickType_t xLastWakeTime, prevWakeTime;
     xLastWakeTime = xTaskGetTickCount();
@@ -759,7 +812,7 @@ void vDemoTask2(void *pvParameters)
                 // Clear screen
                 checkDraw(tumDrawClear(White), __FUNCTION__);
 
-                vDrawStaticItems();
+                
 
                 // Draw the walls
                 checkDraw(tumDrawFilledBox(
@@ -819,31 +872,6 @@ void vDemoTask2(void *pvParameters)
     }
 }
 
-void vDemoTask3(void *pvParameters)
-{
-   
-     while (1) {
-        if (DrawSignal)
-            if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
-                pdTRUE) {
-                   
-                    xGetButtonInput();
-                    xSemaphoreTake(ScreenLock, portMAX_DELAY);
-                // Clear screen
-                checkDraw(tumDrawClear(White), __FUNCTION__);
-
-                vDrawStaticItems();
-
-                xSemaphoreGive(ScreenLock);
-
-
-                // Check for state change
-                vCheckStateInput();
-
-                }
-     }    
-
-}
 
 
 #define PRINT_TASK_ERROR(task) PRINT_ERROR("Failed to print task ##task");
