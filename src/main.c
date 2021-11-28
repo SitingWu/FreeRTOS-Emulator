@@ -25,13 +25,14 @@
 
 #define STATE_QUEUE_LENGTH 1
 
-#define STATE_COUNT 2
+#define STATE_COUNT 3
 
 #define STATE_ONE 0
 #define STATE_TWO 1
-
-#define NEXT_TASK 0
-#define PREV_TASK 1
+#define STATE_Three 2
+#define NEXT_TASK_1 0
+#define NEXT_TASK_2 1 
+#define PREV_TASK   2
 
 #define STARTING_STATE STATE_ONE
 
@@ -48,6 +49,7 @@
 #define UDP_BUFFER_SIZE 2000
 #define UDP_TEST_PORT_1 1234
 #define UDP_TEST_PORT_2 4321
+#define UDP_TEST_PORT_3 5678
 #define MSG_QUEUE_BUFFER_SIZE 1000
 #define MSG_QUEUE_MAX_MSG_COUNT 10
 #define TCP_BUFFER_SIZE 2000
@@ -65,19 +67,24 @@ static coord_t arr[3]={
 
 static char *mq_one_name = "FreeRTOS_MQ_one_1";
 static char *mq_two_name = "FreeRTOS_MQ_two_1";
+static char *mq_three_name = "FreeRTOS_MQ_three_1";
 aIO_handle_t mq_one = NULL;
 aIO_handle_t mq_two = NULL;
+aIO_handle_t mq_three = NULL;
 aIO_handle_t udp_soc_one = NULL;
 aIO_handle_t udp_soc_two = NULL;
+aIO_handle_t udp_soc_three = NULL;
 aIO_handle_t tcp_soc = NULL;
 
-const unsigned char next_state_signal = NEXT_TASK;
+const unsigned char next_state_signal_1 = NEXT_TASK_1;
+const unsigned char next_state_signal_2 = NEXT_TASK_2;
 const unsigned char prev_state_signal = PREV_TASK;
 
 static TaskHandle_t StateMachine = NULL;
 static TaskHandle_t BufferSwap = NULL;
 static TaskHandle_t DemoTask1 = NULL;
 static TaskHandle_t DemoTask2 = NULL;
+static TaskHandle_t DemoTask3 = NULL;
 static TaskHandle_t UDPDemoTask = NULL;
 static TaskHandle_t TCPDemoTask = NULL;
 static TaskHandle_t MQDemoTask = NULL;
@@ -114,7 +121,7 @@ void checkDraw(unsigned char status, const char *msg)
 void changeState(volatile unsigned char *state, unsigned char forwards)
 {
     switch (forwards) {
-        case NEXT_TASK:
+        case NEXT_TASK_1:
             if (*state == STATE_COUNT - 1) {
                 *state = 0;
             }
@@ -122,6 +129,15 @@ void changeState(volatile unsigned char *state, unsigned char forwards)
                 (*state)++;
             }
             break;
+        case NEXT_TASK_2:
+            if (*state == STATE_COUNT - 2) {
+                *state = 1;
+            }
+            else {
+                (*state)++;
+            }
+            break;
+
         case PREV_TASK:
             if (*state == 0) {
                 *state = STATE_COUNT - 1;
@@ -173,18 +189,40 @@ initial_state:
                     if (DemoTask2) {
                         vTaskSuspend(DemoTask2);
                     }
+                    if (DemoTask3) {
+                        vTaskSuspend(DemoTask3);
+                    }
                     if (DemoTask1) {
                         vTaskResume(DemoTask1);
                     }
+                    
                     break;
                 case STATE_TWO:
+                    if (DemoTask3) {
+                        vTaskSuspend(DemoTask3);
+                    }
                     if (DemoTask1) {
                         vTaskSuspend(DemoTask1);
-                    }
+
                     if (DemoTask2) {
                         vTaskResume(DemoTask2);
                     }
                     break;
+                    
+                    }
+                case STATE_Three:
+                    if (DemoTask1) {
+                        vTaskSuspend(DemoTask1);
+                    } 
+                    if (DemoTask2) {
+                        vTaskSuspend(DemoTask2);
+                    }
+                    if (DemoTask3) {
+                        vTaskResume(DemoTask3);
+                    }
+                    break;
+
+                   
                 default:
                     break;
             }
@@ -434,23 +472,24 @@ checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 7, Black),
 }
 
 
-//static int vCheckStateInput(void)
-//{
-//    if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
-//        if (buttons.buttons[KEYCODE(E)]) {
-//           buttons.buttons[KEYCODE(E)] = 0;
-//            if (StateQueue) {
-//                xSemaphoreGive(buttons.lock);
-//                xQueueSend(StateQueue, &next_state_signal, 0);
-//                return 0;
-//            }
-//            return -1;
-//        }
-//        xSemaphoreGive(buttons.lock);
-//    }
-//
-//    return 0;
-//}
+static int vCheckStateInput(void)
+{
+    if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
+        if (buttons.buttons[KEYCODE(E)]) {
+           buttons.buttons[KEYCODE(E)] = 0;
+            if (StateQueue) {
+                xSemaphoreGive(buttons.lock);
+                xQueueSend(StateQueue, &next_state_signal_1, 0);
+                return 0;
+            }
+            return -1;
+        }
+        xSemaphoreGive(buttons.lock);
+    }
+
+    return 0;
+}
+
 
 void UDPHandlerOne(size_t read_size, char *buffer, void *args)
 {
@@ -460,6 +499,11 @@ void UDPHandlerOne(size_t read_size, char *buffer, void *args)
 void UDPHandlerTwo(size_t read_size, char *buffer, void *args)
 {
     prints("UDP Recv in second handler: %s\n", buffer);
+}
+
+void UDPHandlerThree(size_t read_size, char *buffer, void *args)
+{
+    prints("UDP Recv in third handler: %s\n", buffer);
 }
 
 void vUDPDemoTask(void *pvParameters)
@@ -483,6 +527,16 @@ void vUDPDemoTask(void *pvParameters)
     prints("Demo UDP Socket can be tested using\n");
     prints("*** netcat -vv localhost %d -u ***\n", port);
 
+      port = UDP_TEST_PORT_3;
+
+    udp_soc_three = aIOOpenUDPSocket(addr, port, UDP_BUFFER_SIZE,
+                                   UDPHandlerThree, NULL);
+
+    prints("UDP socket opened on port %d\n", port);
+    prints("Demo UDP Socket can be tested using\n");
+    prints("*** netcat -vv localhost %d -u ***\n", port);
+
+
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -498,11 +552,18 @@ void MQHanderTwo(size_t read_size, char *buffer, void *args)
     prints("MQ Recv in second handler: %s\n", buffer);
 }
 
+
+void MQHanderThree(size_t read_size, char *buffer, void *args)
+{
+    prints("MQ Recv in third handler: %s\n", buffer);
+}
+
 void vDemoSendTask(void *pvParameters)
 {
     static char *test_str_1 = "UDP test 1";
     static char *test_str_2 = "UDP test 2";
-    static char *test_str_3 = "TCP test";
+    static char *test_str_3 = "UDP test 2";
+    static char *test_str_4 = "TCP test";
 
     while (1) {
         prints("*****TICK******\n");
@@ -513,15 +574,22 @@ void vDemoSendTask(void *pvParameters)
             aIOMessageQueuePut(mq_two_name, "Hello MQ two");
         }
 
+        if (mq_three) {
+            aIOMessageQueuePut(mq_three_name, "Hello MQ three");
+        }
         if (udp_soc_one)
             aIOSocketPut(UDP, NULL, UDP_TEST_PORT_1, test_str_1,
                          strlen(test_str_1));
         if (udp_soc_two)
             aIOSocketPut(UDP, NULL, UDP_TEST_PORT_2, test_str_2,
                          strlen(test_str_2));
-        if (tcp_soc)
-            aIOSocketPut(TCP, NULL, TCP_TEST_PORT, test_str_3,
+        if (udp_soc_three)
+            aIOSocketPut(UDP, NULL, UDP_TEST_PORT_3, test_str_3,
                          strlen(test_str_3));
+
+        if (tcp_soc)
+            aIOSocketPut(TCP, NULL, TCP_TEST_PORT, test_str_4,
+                         strlen(test_str_4));
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -533,6 +601,8 @@ void vMQDemoTask(void *pvParameters)
                                  MSG_QUEUE_BUFFER_SIZE, MQHandlerOne, NULL);
     mq_two = aIOOpenMessageQueue(mq_two_name, MSG_QUEUE_MAX_MSG_COUNT,
                                  MSG_QUEUE_BUFFER_SIZE, MQHanderTwo, NULL);
+    mq_three=aIOOpenMessageQueue(mq_three_name, MSG_QUEUE_MAX_MSG_COUNT,
+                                 MSG_QUEUE_BUFFER_SIZE, MQHanderThree, NULL);                                
 
     while (1)
 
@@ -635,7 +705,7 @@ void vDemoTask1(void *pvParameters)
                 xSemaphoreGive(ScreenLock);
 
                 // Get input and check for state change
-                //vCheckStateInput();
+                vCheckStateInput();
             }
     }
 }
@@ -739,7 +809,7 @@ void vDemoTask2(void *pvParameters)
                 xSemaphoreGive(ScreenLock);
 
                 // Check for state change
-                //vCheckStateInput();
+                vCheckStateInput();
 
                 // Keep track of when task last ran so that you know how many ticks
                 //(in our case miliseconds) have passed so that the balls position
@@ -748,6 +818,33 @@ void vDemoTask2(void *pvParameters)
             }
     }
 }
+
+void vDemoTask3(void *pvParameters)
+{
+   
+     while (1) {
+        if (DrawSignal)
+            if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
+                pdTRUE) {
+                   
+                    xGetButtonInput();
+                    xSemaphoreTake(ScreenLock, portMAX_DELAY);
+                // Clear screen
+                checkDraw(tumDrawClear(White), __FUNCTION__);
+
+                vDrawStaticItems();
+
+                xSemaphoreGive(ScreenLock);
+
+
+                // Check for state change
+                vCheckStateInput();
+
+                }
+     }    
+
+}
+
 
 #define PRINT_TASK_ERROR(task) PRINT_ERROR("Failed to print task ##task");
 
@@ -846,6 +943,11 @@ int main(int argc, char *argv[])
        PRINT_TASK_ERROR("DemoTask2");
         goto err_demotask2;
     }
+     if (xTaskCreate(vDemoTask3, "DemoTask3", mainGENERIC_STACK_SIZE * 2,
+                    NULL, mainGENERIC_PRIORITY, &DemoTask3) != pdPASS) {
+       PRINT_TASK_ERROR("DemoTask3");
+        goto err_demotask3;
+    }
 
     /** SOCKETS */
     xTaskCreate(vUDPDemoTask, "UDPTask", mainGENERIC_STACK_SIZE * 2, NULL,
@@ -861,6 +963,7 @@ int main(int argc, char *argv[])
 
     vTaskSuspend(DemoTask1);
     vTaskSuspend(DemoTask2);
+    vTaskSuspend(DemoTask3);
 
     tumFUtilPrintTaskStateList();
 
@@ -868,6 +971,8 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 
+err_demotask3:
+    vTaskDelete(DemoTask2);
 err_demotask2:
     vTaskDelete(DemoTask1);
 err_demotask1:
