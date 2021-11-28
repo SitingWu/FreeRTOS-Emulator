@@ -727,7 +727,7 @@ void vDemoTask1(void *pvParameters)
 void vDemoTask2(void *pvParameters)
 {   int count=1;
     int input=1;
-    const TickType_t xFrequence=500;
+    const TickType_t xFrequence=250;
     TickType_t xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
    // Clear screen
