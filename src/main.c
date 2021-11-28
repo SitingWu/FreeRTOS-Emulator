@@ -54,6 +54,36 @@
 #define MSG_QUEUE_MAX_MSG_COUNT 10
 #define TCP_BUFFER_SIZE 2000
 #define TCP_TEST_PORT 2222
+// TimerHandle_t myTimer=NULL ;
+TaskHandle_t HandleCircleOne = NULL;
+TaskHandle_t HandleCircleTwo = NULL;
+
+TaskHandle_t HandleButtonOne =NULL;
+TaskHandle_t HandleButtonTwo =NULL;
+TaskHandle_t HandleButtonThree =NULL;
+
+
+
+StaticTask_t xTaskBuffer;
+StackType_t xStack[mainGENERIC_STACK_SIZE];
+
+StaticTask_t xTaskBuffer1;
+StackType_t xStack1[mainGENERIC_STACK_SIZE];
+
+QueueHandle_t FlagQueueR = NULL;
+QueueHandle_t FlagQueueL = NULL;
+
+QueueHandle_t Button1Queue =NULL;
+QueueHandle_t Button2Queue =NULL;
+QueueHandle_t Button3Queue =NULL;
+QueueHandle_t QueueTasks =NULL;
+
+static QueueHandle_t StateQueue = NULL;
+static SemaphoreHandle_t DrawSignal = NULL;
+static SemaphoreHandle_t ScreenLock = NULL;
+
+static SemaphoreHandle_t mySyncSignal = NULL;
+static SemaphoreHandle_t mySyncSignalTask = NULL;
 
 #ifdef TRACE_FUNCTIONS
 #include "tracer.h"
@@ -90,9 +120,7 @@ static TaskHandle_t TCPDemoTask = NULL;
 static TaskHandle_t MQDemoTask = NULL;
 static TaskHandle_t DemoSendTask = NULL;
 
-static QueueHandle_t StateQueue = NULL;
-static SemaphoreHandle_t DrawSignal = NULL;
-static SemaphoreHandle_t ScreenLock = NULL;
+
 
 static image_handle_t logo_image = NULL;
 
@@ -305,6 +333,67 @@ void vDrawCireleBlink(int x,int y,int count)
                  __FUNCTION__);
    
 }
+int CircleBlink1=0;
+void vDrawCircleBlink1Hz(void * pvParameters)
+{
+    /* The parameter value is expected to be 1 as 1 is passed in the
+    pvParameters value in the call to xTaskCreate() below. */
+    configASSERT( ( ( uint32_t ) pvParameters ) == 1 );
+    int positionX=100, positionY=100,Frequence=500;
+   for (;;)
+    {
+        if(CircleBlink1){
+        checkDraw(tumDrawCircle( positionX,
+                              positionY,
+                              RADIOS/2,
+                              TUMBlue),
+                 __FUNCTION__);
+         
+
+        vTaskDelay((TickType_t)Frequence);
+        
+        checkDraw(tumDrawCircle( positionX,
+                              positionY,
+                              RADIOS/2,
+                              White),
+                 __FUNCTION__);
+        vTaskDelay((TickType_t)Frequence);
+    }
+    }
+    //vTaskDelete(HandleCircleOne) ;
+}
+
+int CircleBlink2=0;
+void vDrawCircleBlink2Hz(void * pvParameters)
+{
+    /* The parameter value is expected to be 1 as 1 is passed in the
+    pvParameters value in the call to xTaskCreate() below. */
+    configASSERT( ( ( uint32_t ) pvParameters ) == 1 );
+    int positionX=200, positionY=100,Frequence=250;
+    for(;;)
+    {
+       if(CircleBlink2){
+        checkDraw(tumDrawCircle( positionX,
+                              positionY,
+                              RADIOS/2,
+                              TUMBlue),
+                 __FUNCTION__);
+               
+
+        vTaskDelay((TickType_t)Frequence );
+
+          
+        checkDraw(tumDrawCircle( positionX,
+                              positionY,
+                              RADIOS/2,
+                              White),
+                 __FUNCTION__);
+        vTaskDelay((TickType_t)Frequence);
+       } 
+     //  vTaskDelete(HandleCircleTwo);
+    }
+   
+}
 
 //count store
 char btnA = 0, btnB = 0, btnC = 0, btnD = 0;
@@ -322,6 +411,7 @@ void ButtonCountRest(unsigned char Reset)
         checkDraw(tumDrawText(str, 10, DEFAULT_FONT_SIZE * 5, Black),
                   __FUNCTION__);
     }
+    
 }
 
 void vDrawHelpText(void)
@@ -371,56 +461,58 @@ void vDrawHelpTextMove(int i)
 void vDrawFPS(void)
 {
     static unsigned int periods[FPS_AVERAGE_COUNT] = { 0 };
-  static unsigned int periods_total = 0;
-   static unsigned int index = 0;
+    static unsigned int periods_total = 0;
+    static unsigned int index = 0;
     static unsigned int average_count = 0;
     static TickType_t xLastWakeTime = 0, prevWakeTime = 0;
     static char str[10] = { 0 };
     static int text_width;
-   int fps = 0;
+    int fps = 0;
     font_handle_t cur_font = tumFontGetCurFontHandle();
 
-   if (average_count < FPS_AVERAGE_COUNT) {
-       average_count++;
+    if (average_count < FPS_AVERAGE_COUNT) {
+        average_count++;
     }
     else {
-       periods_total -= periods[index];
+        periods_total -= periods[index];
     }
 
-   xLastWakeTime = xTaskGetTickCount();
+    xLastWakeTime = xTaskGetTickCount();
 
-   if (prevWakeTime != xLastWakeTime) {
-      periods[index] =
-          configTICK_RATE_HZ / (xLastWakeTime - prevWakeTime);
-     prevWakeTime = xLastWakeTime;
-     }
+    if (prevWakeTime != xLastWakeTime) {
+        periods[index] =
+            configTICK_RATE_HZ / (xLastWakeTime - prevWakeTime);
+        prevWakeTime = xLastWakeTime;
+    }
     else {
-       periods[index] = 0;
-     }
-
-      periods_total += periods[index];
-
-     if (index == (FPS_AVERAGE_COUNT - 1)) {
-       index = 0;
-          }
-     else {
-             index++;
-            }
-
-       fps = periods_total / average_count;
-      tumFontSelectFontFromName(FPS_FONT);
-
-       sprintf(str, "FPS: %2d", fps);
-
-      if (!tumGetTextSize((char *)str, &text_width, NULL))
-         checkDraw(tumDrawText(str, SCREEN_WIDTH - text_width - 10,
-                                 SCREEN_HEIGHT - DEFAULT_FONT_SIZE * 1.5,
-                                 Skyblue),
-                    __FUNCTION__);
-
-      tumFontSelectFontFromHandle(cur_font);
-      tumFontPutFontHandle(cur_font);
+        periods[index] = 0;
     }
+
+    periods_total += periods[index];
+
+    if (index == (FPS_AVERAGE_COUNT - 1)) {
+        index = 0;
+    }
+    else {
+        index++;
+    }
+
+    fps = periods_total / average_count;
+
+    tumFontSelectFontFromName(FPS_FONT);
+    
+    sprintf(str, "FPS: %2d", fps);
+
+    if (!tumGetTextSize((char *)str, &text_width, NULL))
+        checkDraw(tumDrawText(str, SCREEN_WIDTH - text_width - 10,
+                              SCREEN_HEIGHT - DEFAULT_FONT_SIZE*3,
+                              TUMBlue),
+                  __FUNCTION__);
+tumFontSetSize((ssize_t)18);
+    tumFontSelectFontFromHandle(cur_font);
+    tumFontPutFontHandle(cur_font);
+}
+
 
 void vDrawLogo(void)
 {
@@ -649,6 +741,64 @@ void vTCPDemoTask(void *pvParameters)
 }
 
 
+void myTimerCallback( )
+{
+    int mi;
+    int ni;
+
+    mi=0;
+    ni=0;
+    xQueueOverwrite(Button1Queue,&ni);
+    xQueueOverwrite(Button2Queue,&mi);
+}
+
+void Button2(void *pvParameters)
+{
+    int task_notification;
+    
+    int mi;
+
+    while(1){
+        if((task_notification = ulTaskNotifyTake(pdTRUE,portMAX_DELAY)))
+            xQueueReceive(Button2Queue,&mi,0);
+            mi=mi+1;
+            xQueueSend(Button2Queue,&mi, portMAX_DELAY );
+
+    }
+}
+
+
+void Button1(void *pvParameters)
+{
+    int ni;
+    while (1) {
+                if (mySyncSignal)
+                   if (xSemaphoreTake(mySyncSignal, STATE_DEBOUNCE_DELAY) ==
+                  pdTRUE) {
+                   
+                 xQueueReceive(Button1Queue,&ni,0);
+              
+                   ni=ni+1;
+                     
+                xQueueSend(Button1Queue,&ni, portMAX_DELAY );
+               
+                }
+         }
+    }
+
+void Button3(void *pvParameters)
+{
+     const TickType_t xDelay = 1000/portTICK_PERIOD_MS;
+     int ki=0;
+     while(1)
+     {
+        ki=ki+1;
+        xQueueSend(Button3Queue,&ki, portMAX_DELAY );
+        vTaskDelay(xDelay);
+        
+       
+     }
+}
 
 void vDemoTask1(void *pvParameters)
 {
@@ -674,6 +824,8 @@ void vDemoTask1(void *pvParameters)
 	int circleY = 250;
     int squareX = CAVE_X+250;
     int squareY = CAVE_Y+75;
+    CircleBlink1=0;
+    CircleBlink2=0;
     while (1) {
         if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
@@ -725,43 +877,41 @@ void vDemoTask1(void *pvParameters)
     }
 }
 void vDemoTask2(void *pvParameters)
-{   int count=1;
-    int input=1;
-    const TickType_t xFrequence=250;
-    TickType_t xLastWakeTime;
-    xLastWakeTime = xTaskGetTickCount();
-   // Clear screen
-                checkDraw(tumDrawClear(White), __FUNCTION__);
-     while (1) {
-        if (DrawSignal)
+{  
+
+   CircleBlink1=1;
+   CircleBlink2=1;
+   
+   
+    
+    while (1) {
+       if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
                 pdTRUE) {
-                   
-                    xGetButtonInput();
-                    xSemaphoreTake(ScreenLock, portMAX_DELAY);
-                vDrawCireleBlink(250,70,count);//2HZ
-                if (count%2!=0){
-                 vDrawCireleBlink(320,70,input);
-                 input++;
-                }     
-                  count++;
-                  xSemaphoreGive(ScreenLock);
+                tumEventFetchEvents(FETCH_EVENT_BLOCK |
+                                    FETCH_EVENT_NO_GL_CHECK);
+    
+            xGetButtonInput(); // Update global button data
+                xSemaphoreTake(ScreenLock, portMAX_DELAY);
+                // Clear screen
+                checkDraw(tumDrawClear(White), __FUNCTION__);
                 
                
-                             
-               // Check for state change
+               // Draw FPS in lower right corner
+                vDrawFPS();
+               
+             
+                xSemaphoreGive(buttons.lock);
+                xSemaphoreGive(ScreenLock);
+               
                 vCheckStateInput();
-                // Basic sleep of 500 milliseconds
-                
-                
-                vTaskDelay(xFrequence);
-               
-               
-               
-                }
-     }    
-
+            }
+          
+            
+        }
+   
 }
+#define PRINT_TASK_ERROR(task) PRINT_ERROR("Failed to print task ##task");
 
 void playBallSound(void *args)
 {
@@ -770,6 +920,8 @@ void playBallSound(void *args)
 
 void vDemoTask3(void *pvParameters)
 {
+    CircleBlink1=0;
+    CircleBlink2=0;
     TickType_t xLastWakeTime, prevWakeTime;
     xLastWakeTime = xTaskGetTickCount();
     prevWakeTime = xLastWakeTime;
@@ -877,7 +1029,8 @@ void vDemoTask3(void *pvParameters)
 #define PRINT_TASK_ERROR(task) PRINT_ERROR("Failed to print task ##task");
 
 int main(int argc, char *argv[])
-{
+{   CircleBlink1=0;
+    CircleBlink2=0;
     char *bin_folder_path = tumUtilGetBinFolderPath(argv[0]);
 
     prints("Initializing: ");
@@ -989,10 +1142,17 @@ int main(int argc, char *argv[])
     xTaskCreate(vDemoSendTask, "SendTask", mainGENERIC_STACK_SIZE * 2, NULL,
                 configMAX_PRIORITIES - 1, &DemoSendTask);
 
+    //Exercise 3.2.2
+    xTaskCreate(vDrawCircleBlink1Hz, "CircleTaskS", mainGENERIC_STACK_SIZE, NULL, mainGENERIC_PRIORITY, &HandleCircleTwo );
+    xTaskCreate(vDrawCircleBlink2Hz, "CircleTaskD", mainGENERIC_STACK_SIZE, NULL, mainGENERIC_PRIORITY , &HandleCircleOne );
+   
+   
+    
     vTaskSuspend(DemoTask1);
     vTaskSuspend(DemoTask2);
     vTaskSuspend(DemoTask3);
-
+   
+    
     tumFUtilPrintTaskStateList();
 
     vTaskStartScheduler();
@@ -1001,10 +1161,15 @@ int main(int argc, char *argv[])
 
 err_demotask3:
     vTaskDelete(DemoTask2);
+    vTaskDelete(HandleCircleTwo);
+    vTaskDelete(HandleCircleOne);
 err_demotask2:
-    vTaskDelete(DemoTask1);
+    vTaskDelete(DemoTask1); 
+    vTaskResume(HandleCircleTwo);
+    vTaskResume(HandleCircleOne);
 err_demotask1:
     vTaskDelete(BufferSwap);
+    
 err_bufferswap:
     vTaskDelete(StateMachine);
 err_statemachine:
