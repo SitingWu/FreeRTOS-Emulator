@@ -61,7 +61,7 @@ TaskHandle_t HandleCircleTwo = NULL;
 TaskHandle_t HandleButtonOne =NULL;
 TaskHandle_t HandleButtonTwo =NULL;
 TaskHandle_t HandleButtonThree =NULL;
-
+SDL_Window *window;
 
 
 StaticTask_t xTaskBuffer;
@@ -826,6 +826,8 @@ void vDemoTask1(void *pvParameters)
     int squareY = CAVE_Y+75;
     CircleBlink1=0;
     CircleBlink2=0;
+    int ScreenX=CAVE_SIZE_X ;
+    int ScreenY=CAVE_SIZE_Y;
     while (1) {
         if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
@@ -839,7 +841,10 @@ void vDemoTask1(void *pvParameters)
                 // Clear screen
                 checkDraw(tumDrawClear(White), __FUNCTION__);
                 vDrawStaticItems();
+                ScreenX=tumEventGetMouseX()/2+CAVE_SIZE_X;
+                ScreenY=tumEventGetMouseY()/2+CAVE_SIZE_Y;
 
+                SDL_SetWindowPosition(window ,ScreenX,ScreenY);
                 vDrawMoveCirele(circleX,circleY);
                 vDrawMoveCirelSquare(squareX,squareY);
                  //parameter für circle
