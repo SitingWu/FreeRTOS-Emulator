@@ -841,8 +841,8 @@ void vDemoTask1(void *pvParameters)
                 // Clear screen
                 checkDraw(tumDrawClear(White), __FUNCTION__);
                 vDrawStaticItems();
-                ScreenX=tumEventGetMouseX()/2+CAVE_SIZE_X;
-                ScreenY=tumEventGetMouseY()/2+CAVE_SIZE_Y;
+                ScreenX=tumEventGetMouseX()/2+CAVE_X;
+                ScreenY=tumEventGetMouseY()/2+CAVE_Y;
 
                 SDL_SetWindowPosition(window ,ScreenX,ScreenY);
                 vDrawMoveCirele(circleX,circleY);
