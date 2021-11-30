@@ -57,7 +57,7 @@
 // TimerHandle_t myTimer=NULL ;
 TaskHandle_t HandleCircleOne = NULL;
 TaskHandle_t HandleCircleTwo = NULL;
-
+TaskHandle_t Time=NULL;
 TaskHandle_t HandleButtonOne =NULL;
 TaskHandle_t HandleButtonTwo =NULL;
 TaskHandle_t HandleButtonThree =NULL;
@@ -596,8 +596,63 @@ static int vCheckStateInput(void)
 
     return 0;
 }
+int Status=0;
+static int vCheckStateInput_P(void)
+{       
+    if (xSemaphoreTake(buttons.lock, 0) == pdTRUE) {
+        if (buttons.buttons[KEYCODE(P)]) {
+           buttons.buttons[KEYCODE(P)] = 0;
+            if (Status) {
+                vTaskResume(Time);
+                Status=0;
+            }
+            else
+            {
+                vTaskSuspend(Time);
+                Status=1;
+            }
+        }
+        xSemaphoreGive(buttons.lock);
+    }
+
+    return 0;
+}
+int time=0;
+void Timer()
+{
+const TickType_t xDelay = 1000/portTICK_PERIOD_MS;
+     
+     while(1)
+     {
+        time+=1;
+        vTaskDelay(xDelay);
+     }
 
 
+}
+
+void TimeText()
+{
+     static char str1[100] = { 0 };
+     static char str2[100]={0};
+    
+        tumFontSetSize((ssize_t)18);
+
+    sprintf(str1, "TIME: %d", time);
+    sprintf(str2,"Press P to Stop");
+          
+    checkDraw(tumDrawText((char *)str1,
+                            10,
+                            CAVE_SIZE_Y+210, 
+                            Black),
+                  __FUNCTION__);
+    checkDraw(tumDrawText((char *)str2,
+                            10,
+                            CAVE_SIZE_Y+190, 
+                            Black),
+                  __FUNCTION__);              
+   
+}
 void UDPHandlerOne(size_t read_size, char *buffer, void *args)
 {
     prints("UDP Recv in first handler: %s\n", buffer);
@@ -802,21 +857,6 @@ void Button3(void *pvParameters)
 
 void vDemoTask1(void *pvParameters)
 {
-  //  image_handle_t ball_spritesheet =
-  //      tumDrawLoadImage("../resources/images/ball_spritesheet.png");
-  //  animation_handle_t ball_animation =
-  //      tumDrawAnimationCreate(ball_spritesheet, 25, 1);
-  //  tumDrawAnimationAddSequence(ball_animation, "FORWARDS", 0, 0,
-  //                              SPRITE_SEQUENCE_HORIZONTAL_POS, 24);
-  //  tumDrawAnimationAddSequence(ball_animation, "REVERSE", 0, 23,
-  //                              SPRITE_SEQUENCE_HORIZONTAL_NEG, 24);
-  //  sequence_handle_t forward_sequence =
-  //      tumDrawAnimationSequenceInstantiate(ball_animation, "FORWARDS",
-  //                                          40);
-  //  sequence_handle_t reverse_sequence =
-  //      tumDrawAnimationSequenceInstantiate(ball_animation, "REVERSE",
-  //                                          40);
-  //  TickType_t xLastFrameTime = xTaskGetTickCount();
     int count=0;
     float phiSquare = acos(-1.0);
     float phiCircle = 0;
@@ -861,18 +901,7 @@ void vDemoTask1(void *pvParameters)
                 vDrawHelpTextMove(count);
                 ButtonCountRest(tumEventGetMouseLeft());
                 vDrawButtonText();
-              //  tumDrawAnimationDrawFrame(forward_sequence,
-              //                            xTaskGetTickCount() -
-              //                            xLastFrameTime,
-              //                            SCREEN_WIDTH - 50, SCREEN_HEIGHT - 60);
-              //  tumDrawAnimationDrawFrame(reverse_sequence,
-              //                            xTaskGetTickCount() -
-               //                           xLastFrameTime,
-              //                            SCREEN_WIDTH - 50 - 40, SCREEN_HEIGHT - 60);
-              //  xLastFrameTime = xTaskGetTickCount();
-
-                // Draw FPS in lower right corner
-               // vDrawFPS();
+              
 
                 xSemaphoreGive(ScreenLock);
 
@@ -883,12 +912,12 @@ void vDemoTask1(void *pvParameters)
 }
 void vDemoTask2(void *pvParameters)
 {  
-
+    Status=0;
    CircleBlink1=1;
    CircleBlink2=1;
    
    
-    
+    xTaskCreate(Timer,"Timer",mainGENERIC_STACK_SIZE,(void*) 1,mainGENERIC_PRIORITY,&Time);
     while (1) {
        if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
@@ -904,11 +933,11 @@ void vDemoTask2(void *pvParameters)
                
                // Draw FPS in lower right corner
                 vDrawFPS();
-               
+               TimeText();
              
                 xSemaphoreGive(buttons.lock);
                 xSemaphoreGive(ScreenLock);
-               
+               vCheckStateInput_P();
                 vCheckStateInput();
             }
           
@@ -1213,4 +1242,36 @@ __attribute__((unused)) void vApplicationIdleHook(void)
     xTimeToSleep.tv_nsec = 0;
     nanosleep(&xTimeToSleep, &xTimeSlept);
 #endif
+}
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
+                                    StackType_t **ppxIdleTaskStackBuffer,
+                                    uint32_t *pulIdleTaskStackSize )
+{
+
+/* If the buffers to be provided to the Idle task are declared inside this
+function then they must be declared static – otherwise they will be allocated on
+the stack and so not exists after this function exits. */
+static StaticTask_t xIdleTaskTCB;
+static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
+
+    /* Pass out a pointer to the StaticTask_t structure in which the Idle task’s
+    state will be stored. */
+    *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
+
+    /* Pass out the array that will be used as the Idle task’s stack. */
+    *ppxIdleTaskStackBuffer = uxIdleTaskStack;
+
+    /* Pass out the size of the array pointed to by *ppxIdleTaskStackBuffer.
+    Note that, as the array is necessarily of type StackType_t,
+    configMINIMAL_STACK_SIZE is specified in words, not bytes. */
+    *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}
+#define configTIMER_TASK_STACK_DEPTH            configMINIMAL_STACK_SIZE
+void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize)
+{
+    static StaticTask_t xTimerTaskTCB;
+    static StackType_t uxTimerTaskStack[configTIMER_TASK_STACK_DEPTH];
+    *ppxTimerTaskTCBBuffer = &xTimerTaskTCB;
+    *ppxTimerTaskStackBuffer = uxTimerTaskStack;
+    *pulTimerTaskStackSize =configTIMER_TASK_STACK_DEPTH;
 }
