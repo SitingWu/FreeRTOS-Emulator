@@ -332,8 +332,8 @@ void vDrawCircleBlink1Hz(void * pvParameters)
         {
         checkDraw(tumDrawCircle( positionX,
                               positionY,
-                              RADIOS/2,
-                              TUMBlue),
+                              RADIOS,
+                              Black),
                  __FUNCTION__);
          
 
@@ -341,7 +341,7 @@ void vDrawCircleBlink1Hz(void * pvParameters)
         
         checkDraw(tumDrawCircle( positionX,
                               positionY,
-                              RADIOS/2,
+                              RADIOS,
                               White),
                  __FUNCTION__);
         vTaskDelay((TickType_t)Frequence);
@@ -354,14 +354,14 @@ int CircleBlink2=0;
 void vDrawCircleBlink2Hz(void * pvParameters)
 {
     
-    int positionX=200, positionY=100,Frequence=250;
+    int positionX=250, positionY=100,Frequence=250;
     
     
        for(;;){
         checkDraw(tumDrawCircle( positionX,
                               positionY,
-                              RADIOS/2,
-                              TUMBlue),
+                              RADIOS,
+                              Black),
                  __FUNCTION__);
                
 
@@ -370,7 +370,7 @@ void vDrawCircleBlink2Hz(void * pvParameters)
           
         checkDraw(tumDrawCircle( positionX,
                               positionY,
-                              RADIOS/2,
+                              RADIOS,
                               White),
                  __FUNCTION__);
         vTaskDelay((TickType_t)Frequence);
@@ -794,22 +794,22 @@ void vTCPDemoTask(void *pvParameters)
         vTaskDelay(10);
     }
 }
-
+int k;
 int s;
-void Button_S(void *pvParameters)
+void Button_K(void *pvParameters)
 {
     int task_notification;
 
     while(1){
         if((task_notification = ulTaskNotifyTake(pdTRUE,portMAX_DELAY)))
          {   
-            s+=1;
+            k+=1;
          }    
     }
 }
 
-int k;
-void Button_K(void *pvParameters)
+
+void Button_S(void *pvParameters)
 {   
     
     while (1) {
@@ -818,7 +818,7 @@ void Button_K(void *pvParameters)
                   pdTRUE) 
                   {
                             
-                   k+=1;
+                   s+=1;
                
                
                 }
@@ -909,9 +909,7 @@ void vDemoTask1(void *pvParameters)
 void vDemoTask2(void *pvParameters)
 { 
     Status=0;
-   CircleBlink1=1;
-   CircleBlink2=1;
-     //Exercise 3.2.2
+       //Exercise 3.2.2
     xTaskCreate(vDrawCircleBlink1Hz, "CircleTaskS", mainGENERIC_STACK_SIZE, (void*)1, mainGENERIC_PRIORITY, &HandleCircleTwo );
     xTaskCreate(vDrawCircleBlink2Hz, "CircleTaskD", mainGENERIC_STACK_SIZE, (void*)1, mainGENERIC_PRIORITY , &HandleCircleOne );
     vTaskResume(HandleCircleTwo);
@@ -954,8 +952,8 @@ void vDemoTask2(void *pvParameters)
 
 void vDemoTask3(void *pvParameters)
 {
-    CircleBlink1=0;
-    CircleBlink2=0;
+    vTaskDelete(HandleCircleOne);
+    vTaskDelete(HandleCircleTwo);
    
 
     prints("Task 1 init'd\n");
@@ -991,8 +989,7 @@ void vDemoTask3(void *pvParameters)
 #define PRINT_TASK_ERROR(task) PRINT_ERROR("Failed to print task ##task");
 
 int main(int argc, char *argv[])
-{   CircleBlink1=0;
-    CircleBlink2=0;
+{   
     char *bin_folder_path = tumUtilGetBinFolderPath(argv[0]);
 
     prints("Initializing: ");
@@ -1127,8 +1124,7 @@ int main(int argc, char *argv[])
 
 err_demotask3:
     vTaskDelete(DemoTask2);
-    vTaskDelete(HandleCircleTwo);
-    vTaskDelete(HandleCircleOne);
+    
 err_demotask2:
     vTaskDelete(DemoTask1); 
 
