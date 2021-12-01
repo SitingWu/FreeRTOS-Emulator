@@ -57,6 +57,7 @@
 #define TCP_TEST_PORT 2222
 // TimerHandle_t myTimer=NULL ;
 TaskHandle_t HandleCircleOne = NULL;
+TaskHandle_t xTask=NULL;
 TaskHandle_t HandleCircleTwo = NULL;
 TaskHandle_t Time=NULL;
 SDL_Window *window;
@@ -68,7 +69,11 @@ QueueHandle_t FlagQueueL = NULL;
 
 TaskHandle_t ButtonK =NULL;
 TaskHandle_t ButtonS =NULL;
-
+TaskHandle_t Tasks=NULL;
+TaskHandle_t Task1=NULL;
+TaskHandle_t Task2=NULL;
+TaskHandle_t Task3=NULL;
+TaskHandle_t Task4=NULL;
 static QueueHandle_t StateQueue = NULL;
 static SemaphoreHandle_t DrawSignal = NULL;
 static SemaphoreHandle_t ScreenLock = NULL;
@@ -325,7 +330,7 @@ void vDrawCireleBlink(int x,int y,int count)
 int CircleBlink1=0;
 void vDrawCircleBlink1Hz(void * pvParameters)
 {
-      int positionX=100, positionY=100,Frequence=500;
+      int positionX=100, positionY=100,Frequence=500/portTICK_PERIOD_MS;
  
     
         for (;;)
@@ -354,7 +359,7 @@ int CircleBlink2=0;
 void vDrawCircleBlink2Hz(void * pvParameters)
 {
     
-    int positionX=250, positionY=100,Frequence=250;
+    int positionX=250, positionY=100,Frequence=250/portTICK_PERIOD_MS;
     
     
        for(;;){
@@ -408,12 +413,12 @@ void vDrawHelpText(void)
 
     tumFontSetSize((ssize_t)30);
 
-    sprintf(str1, "Right");
+    sprintf(str1, "Unter");
    
 
     if (!tumGetTextSize((char *)str1, &text_width, NULL))
-        checkDraw(tumDrawText((char* )str1, (620-text_width),
-                                400,
+        checkDraw(tumDrawText((char* )str1, (CAVE_SIZE_X-text_width),
+                                430,
                              Black),
                   __FUNCTION__);
     
@@ -860,8 +865,6 @@ void vDemoTask1(void *pvParameters)
 	int circleY = 250;
     int squareX = CAVE_X+250;
     int squareY = CAVE_Y+75;
-    CircleBlink1=0;
-    CircleBlink2=0;
     int ScreenX=CAVE_SIZE_X ;
     int ScreenY=CAVE_SIZE_Y;
     while (1) {
@@ -909,17 +912,17 @@ void vDemoTask1(void *pvParameters)
 void vDemoTask2(void *pvParameters)
 { 
     Status=0;
-       //Exercise 3.2.2
-    xTaskCreate(vDrawCircleBlink1Hz, "CircleTaskS", mainGENERIC_STACK_SIZE, (void*)1, mainGENERIC_PRIORITY, &HandleCircleTwo );
-    xTaskCreate(vDrawCircleBlink2Hz, "CircleTaskD", mainGENERIC_STACK_SIZE, (void*)1, mainGENERIC_PRIORITY , &HandleCircleOne );
+       
+    HandleCircleOne=xTaskCreateStatic(vDrawCircleBlink1Hz, "CircleTaskS", mainGENERIC_STACK_SIZE,NULL, mainGENERIC_PRIORITY,xStack, &xTaskBuffer);
+    xTaskCreate(vDrawCircleBlink2Hz, "CircleTaskD", mainGENERIC_STACK_SIZE, (void*)1, mainGENERIC_PRIORITY , &HandleCircleTwo );
     vTaskResume(HandleCircleTwo);
     vTaskResume(HandleCircleOne);
    
-    xTaskCreate(Button_K,"K",mainGENERIC_STACK_SIZE,NULL,mainGENERIC_PRIORITY,&ButtonK);
-    xTaskCreate(Button_S,"S",mainGENERIC_STACK_SIZE,NULL,mainGENERIC_PRIORITY,&ButtonS);
+    xTaskCreate(Button_K,"K",mainGENERIC_STACK_SIZE,NULL,mainGENERIC_PRIORITY+1,&ButtonK);
+    xTaskCreate(Button_S,"S",mainGENERIC_STACK_SIZE,NULL,mainGENERIC_PRIORITY+2,&ButtonS);
 
    
-    xTaskCreate(Timer,"Timer",mainGENERIC_STACK_SIZE,(void*) 1,mainGENERIC_PRIORITY,&Time);
+    xTaskCreate(Timer,"Timer",mainGENERIC_STACK_SIZE,(void*) 1,mainGENERIC_PRIORITY+3,&Time);
     while (1) {
        if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
@@ -941,47 +944,184 @@ void vDemoTask2(void *pvParameters)
                 xSemaphoreGive(ScreenLock);
                vCheckStateInput_P();
                DrawButtonText();
-                vCheckStateInput();
+                vCheckStateInput(); 
+            //vTaskStartScheduler(); erro
             }
-          
+         
             
         }
    
 }
 #define PRINT_TASK_ERROR(task) PRINT_ERROR("Failed to print task ##task");
 
+struct my_struct{
+    SemaphoreHandle_t lock;
+    int counter;
+};
+struct my_struct instance={.lock=NULL};
+int tick=15;
+void xTask1(void *pvParameters)
+{
+  
+    int i=1;
+    while (1) {
+
+        if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
+        {
+            
+            if(instance.counter<tick)
+            {
+               xQueueSend(Tasks,&i,portMAX_DELAY);
+                instance.counter+=1;
+            }
+             xSemaphoreGive(instance.lock);
+        } 
+        vTaskDelay(1);
+    }
+}
+void xTask2(void *pvParameters)
+{  
+    int i=2;
+    while (1) {
+
+        
+       
+      
+        
+        if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
+        {
+            if(instance.counter<tick)
+            {
+                xQueueSend(Tasks,&i,portMAX_DELAY);
+            }
+            xSemaphoreGive(instance.lock);
+        }
+        vTaskDelay(2);
+        //wake up task 3
+        xSemaphoreGive(mySyncSignalTask);
+
+    }
+}
+void xTask3(void *pvParameters)
+{
+    int i=3;
+    while (1) {
+        if (mySyncSignalTask)
+                   if (xSemaphoreTake(mySyncSignalTask, STATE_DEBOUNCE_DELAY) ==
+                  pdTRUE) {
+                     
+                      if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
+                     {
+                        if(instance.counter<tick)
+                        {
+                            xQueueSend(Tasks,&i,portMAX_DELAY);
+                        }
+                        xSemaphoreGive(instance.lock);
+                     }
+                        
+
+        }
+
+    }
+}
+void xTask4(void *pvParameters)
+{
+    int i=4;
+    while (1) {
+        
+       
+        if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
+        {
+            if(instance.counter<tick)
+            {
+                xQueueSend(Tasks,&i,portMAX_DELAY);
+            }
+            xSemaphoreGive(instance.lock);
+        }
+        vTaskDelay(4);
+
+    }
+}
+
 void vDemoTask3(void *pvParameters)
 {
     vTaskDelete(HandleCircleOne);
     vTaskDelete(HandleCircleTwo);
-   
+    vTaskDelete(Time);
 
     prints("Task 1 init'd\n");
+    instance.lock=xSemaphoreCreateMutex();
+    Tasks=xQueueCreate(100,sizeof(int));
+    int i;
+    int j=0;
+    static char str1[100] = { 0 };
+    static char str2[100] = { 0 };
+    char output[tick][tick];
+   for(int l=0;l<tick;l++)
+    {
+        strcpy(output[l]," ");
+    
+    }
+   
 
-    while (1) {
+    xTaskCreate(xTask1, "Task1", mainGENERIC_STACK_SIZE, NULL, 1 , &Task1 );
+    xTaskCreate(xTask2, "Task2", mainGENERIC_STACK_SIZE, NULL, 2 , &Task2);
+    xTaskCreate(xTask3, "Task3", mainGENERIC_STACK_SIZE, NULL, 3 , &Task3 );
+    xTaskCreate(xTask4, "Task4", mainGENERIC_STACK_SIZE, NULL, 4 , &Task4 );
+
+     while (1) {
         if (DrawSignal)
             if (xSemaphoreTake(DrawSignal, portMAX_DELAY) ==
                 pdTRUE) {
-               
-                xGetButtonInput(); // Update global button data
-
+                tumEventFetchEvents(FETCH_EVENT_BLOCK |
+                                    FETCH_EVENT_NO_GL_CHECK);
                 xSemaphoreTake(ScreenLock, portMAX_DELAY);
-                // Clear screen
+
                 checkDraw(tumDrawClear(White), __FUNCTION__);
 
-                
 
-                // Draw the walls
-                checkDraw(tumDrawFilledBox(100,100,100,100,Red),
-                              
-                          __FUNCTION__);
                 
+               if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
+                {
+                         if(instance.counter==tick)
+                         {
+                            if(uxQueueMessagesWaiting(Tasks))
+                            {
+                                xQueueReceive(Tasks,&i,portMAX_DELAY);
+                                
+                                sprintf(str2, "%d",i);
+                                strcat(str1,str2);
+                                if(i==1)
+                                {
+                          
+                                    sprintf(output[j],"Tick %d : ",j+1);
+                                    strcat(output[j],str1);
+                                  
+                                    strcpy(str1,"");
+                                    
+                                    j++;
+
+                                }
+                            }
+                           
+                         }
+                         
+                        xSemaphoreGive(instance.lock);
+                 }
+                
+                 for(int count=0;count<tick;count++)
+                {
+                    checkDraw(tumDrawText(output[count], CAVE_X+50, 15+20*count, Black),
+                            __FUNCTION__);
+                }    
+                            
+
                 xSemaphoreGive(ScreenLock);
-                // Check for state change
+                xGetButtonInput();
                 vCheckStateInput();
-
             }
-    }
+     }
+
 }
 
 
