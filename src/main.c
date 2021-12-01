@@ -965,6 +965,7 @@ void xTask1(void *pvParameters)
   
     int i=1;
     while (1) {
+        vTaskDelay(1);
 
         if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
         {
@@ -976,7 +977,7 @@ void xTask1(void *pvParameters)
             }
              xSemaphoreGive(instance.lock);
         } 
-        vTaskDelay(1);
+        
     }
 }
 void xTask2(void *pvParameters)
@@ -986,7 +987,7 @@ void xTask2(void *pvParameters)
 
         
        
-      
+      vTaskDelay(2);
         
         if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
         {
@@ -996,7 +997,7 @@ void xTask2(void *pvParameters)
             }
             xSemaphoreGive(instance.lock);
         }
-        vTaskDelay(2);
+        
         //wake up task 3
         xSemaphoreGive(mySyncSignalTask);
 
@@ -1029,7 +1030,7 @@ void xTask4(void *pvParameters)
     int i=4;
     while (1) {
         
-       
+       vTaskDelay(4);
         if(xSemaphoreTake(instance.lock,portMAX_DELAY)==pdTRUE)
         {
             if(instance.counter<tick)
@@ -1038,7 +1039,7 @@ void xTask4(void *pvParameters)
             }
             xSemaphoreGive(instance.lock);
         }
-        vTaskDelay(4);
+        
 
     }
 }
