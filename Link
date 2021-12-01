@@ -9,3 +9,5 @@ Ans:
 2)tickless kernel is kernel that work without a regular timer tick.
 
 3)stack overflow could be happen when the task stack is too low ,programm go erro.
+
+4)task with a bigger priorities number , it will run first than the other in a same tick.
