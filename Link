@@ -1,0 +1,11 @@
+my git repostories link
+https://github.com/SitingWu
+
+
+Ans:
+
+1)kernel tick is  time unit of the kernel based on the hardware timer.
+
+2)tickless kernel is kernel that work without a regular timer tick.
+
+3)stack overflow could be happen when the task stack is too low ,programm go erro.
